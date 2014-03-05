@@ -2,7 +2,7 @@
 
 var MainContent = React.createClass({
     getInitialState: function() {
-        return {index: 0, count: 0};
+        return {index: 0, count: 0, finished: false};
     },
 
     nextClick: function () {
@@ -14,15 +14,34 @@ var MainContent = React.createClass({
         this.nextClick();
     },
 
+    finishGame: function () {
+        this.setState({finished: true});
+    },
+
+    submitPlayers: function (data) {
+        console.log(data.playerA);
+        console.log(data.playerB);
+    },
+
     render: function () {
-        return (
-            <div>
-                <CorrectAnswers count={this.state.count} />
-                <Word text={this.props.words[this.state.index]} />
-                <Button text="Yes" onclick={this.correctClick}/>
-                <Button text="Next" onclick={this.nextClick} />
-            </div>
-        );
+        if (!this.state.finished) {
+            return (
+                <div>
+                    <Timer finish={this.finishGame}/>
+                    <CorrectAnswers count={this.state.count} />
+                    <Word text={this.props.words[this.state.index]} />
+                    <Button text="Yes" onclick={this.correctClick}/>
+                    <Button text="Next" onclick={this.nextClick} />
+                </div>
+            );
+        }
+        else {
+            return (
+                <div>
+                    <Players onPlayersSubmit={this.submitPlayers}/>
+                </div>
+            );
+        }
     }
 });
 
@@ -38,6 +57,14 @@ var Timer = React.createClass({
 
     componentDidMount: function () {
         this.interval = setInterval(this.tick, 1000);
+    },
+
+    shouldComponentUpdate: function (nextProps, nextState) {
+        if (nextState.secondsRemain < 0) {
+            clearInterval(this.interval);
+            this.props.finish();
+        }
+        return nextState.secondsRemain >= 0
     },
 
     componentWillUnmount: function () {
@@ -80,11 +107,37 @@ var Button = React.createClass({
     }
 });
 
+var Players = React.createClass({
+    handleSubmit: function () {
+        var p1 = this.refs.playerA.getDOMNode().value.trim();
+        var p2 = this.refs.playerB.getDOMNode().value.trim();
 
-var words = ["hello", "world", "this", "is", "my", "first", "react", "application"];
+        this.props.onPlayersSubmit({playerA: p1, playerB: p2});
+
+        this.refs.playerA.getDOMNode().value = '';
+        this.refs.playerB.getDOMNode().value = '';
+
+        return false;
+    },
+
+    render: function () {
+        return (
+            <form className="playersForm" onSubmit={this.handleSubmit}>
+                <span>Enter the players: </span>
+                <input type="text" placeholder="Player A" ref="playerA" />
+                <input type="text" placeholder="Player B" ref="playerB" />
+                <input type="submit" value="Done!" />
+            </form>
+        );
+    }
+});
+
+
+var words = ["hello", "world", "this", "is", "my", "first", "react", "application", "oh", "so", "many",
+"words", "I", "should", "write", "here"];
 
 
 React.renderComponent(
-    <MainContent words={_.sample(words, 4)} />,
+    <MainContent words={_.sample(words, 10)} />,
     document.getElementById('content')
 );
